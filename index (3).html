@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>아카이빙 — 웹소설 추천</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f6;
+  --surface: #f2f0eb;
+  --card: #ffffff;
+  --border: #e8e3d8;
+  --text: #1a1814;
+  --muted: #7a7468;
+  --dim: #c2bdb2;
+  --accent: #c0392b;
+  --sans: 'Noto Sans KR', sans-serif;
+  --serif: 'Noto Serif KR', serif;
+  --naver: #03c75a;
+  --kakao: #f0a500;
+  --joara: #e85d26;
+  --ridi: #1a7cd9;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--bg);
+  border-bottom: 2px solid var(--text);
+  padding: 0 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky; top: 0; z-index: 50;
+}
+
+.logo {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header-nav a {
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 400;
+  transition: color 0.15s;
+}
+
+.header-nav a:hover { color: var(--text); }
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.8rem;
+  background: var(--surface);
+}
+
+.search-box input {
+  background: none; border: none; outline: none;
+  font-family: var(--sans); font-size: 0.78rem; font-weight: 300;
+  color: var(--text); width: 160px;
+}
+
+.search-box input::placeholder { color: var(--dim); }
+
+/* ── TABS ── */
+.tab-section {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.tab-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-inner::-webkit-scrollbar { display: none; }
+
+.tab {
+  padding: 0.9rem 1.5rem;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  cursor: pointer;
+  border: none; background: none;
+  border-bottom: 2px solid transparent;
+  font-family: var(--sans);
+  white-space: nowrap;
+  position: relative; top: 1px;
+  transition: color 0.15s;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+
+.tab[data-p="네이버시리즈"].active { border-bottom-color: var(--naver); color: var(--naver); }
+.tab[data-p="카카오페이지"].active { border-bottom-color: var(--kakao); color: var(--kakao); }
+.tab[data-p="조아라"].active { border-bottom-color: var(--joara); color: var(--joara); }
+.tab[data-p="리디북스"].active { border-bottom-color: var(--ridi); color: var(--ridi); }
+
+.tab-dot { width: 5px; height: 5px; border-radius: 50%; }
+.tab[data-p="네이버시리즈"] .tab-dot { background: var(--naver); }
+.tab[data-p="카카오페이지"] .tab-dot { background: var(--kakao); }
+.tab[data-p="조아라"] .tab-dot { background: var(--joara); }
+.tab[data-p="리디북스"] .tab-dot { background: var(--ridi); }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 1rem 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.genre-btn {
+  font-size: 0.7rem; letter-spacing: 0.06em;
+  color: var(--muted); border: 1px solid var(--border);
+  background: none; padding: 0.25rem 0.75rem; cursor: pointer;
+  font-family: var(--sans); transition: all 0.15s; border-radius: 2px;
+}
+.genre-btn:hover { color: var(--text); border-color: var(--text); }
+.genre-btn.active { color: var(--bg); background: var(--text); border-color: var(--text); }
+
+.sort-select {
+  margin-left: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-family: var(--sans); font-size: 0.72rem;
+  padding: 0.25rem 0.65rem; outline: none; cursor: pointer;
+}
+
+/* ── MAIN LAYOUT ── */
+.main {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem 5rem;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 3rem;
+  align-items: start;
+}
+
+/* ── NOVEL GRID ── */
+.novel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.novel-card {
+  background: var(--card);
+  padding: 1.4rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.novel-card:hover { background: var(--surface); }
+
+.card-platform {
+  font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.14rem 0.45rem; font-weight: 500; border-radius: 2px;
+  display: inline-block;
+}
+.p-naver { background: rgba(3,199,90,0.1); color: var(--naver); }
+.p-kakao { background: rgba(240,165,0,0.1); color: var(--kakao); }
+.p-joara { background: rgba(232,93,38,0.1); color: var(--joara); }
+.p-ridi { background: rgba(26,124,217,0.1); color: var(--ridi); }
+
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.3rem; }
+.card-score { font-size: 0.72rem; color: var(--dim); letter-spacing: 0.05em; }
+.card-title { font-family: var(--serif); font-size: 0.98rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+.card-author { font-size: 0.68rem; color: var(--muted); }
+.card-desc {
+  font-size: 0.76rem; line-height: 1.75; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 0.3rem;
+}
+.card-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: auto; padding-top: 0.7rem; }
+.card-tag { font-size: 0.58rem; color: var(--dim); border: 1px solid var(--border); padding: 0.1rem 0.45rem; border-radius: 2px; }
+
+.empty-state { grid-column: 1/-1; padding: 5rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+/* ── SIDEBAR ── */
+.sidebar { display: flex; flex-direction: column; gap: 2rem; }
+
+.sidebar-block {
+  border: 1px solid var(--border);
+  padding: 1.4rem;
+}
+
+.sidebar-title {
+  font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); font-weight: 400; margin-bottom: 1rem;
+  padding-bottom: 0.7rem; border-bottom: 1px solid var(--border);
+}
+
+/* AI 추천 */
+.ai-form { display: flex; flex-direction: column; gap: 0.8rem; }
+.ai-input, .ai-select, .ai-textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--sans); font-size: 0.78rem; font-weight: 300;
+  padding: 0.6rem 0.8rem; outline: none; transition: border-color 0.15s;
+}
+.ai-input:focus, .ai-select:focus, .ai-textarea:focus { border-color: var(--text); }
+.ai-textarea { resize: vertical; min-height: 70px; }
+.ai-input::placeholder, .ai-textarea::placeholder { color: var(--dim); }
+
+.ai-label { font-size: 0.65rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.2rem; display: block; }
+
+.ai-btn {
+  width: 100%; background: var(--text); color: var(--bg);
+  border: none; padding: 0.75rem; font-family: var(--sans); font-size: 0.72rem;
+  letter-spacing: 0.1em; text-transform: uppercase; font-weight: 400;
+  cursor: pointer; transition: background 0.15s;
+}
+.ai-btn:hover:not(:disabled) { background: var(--accent); }
+.ai-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ai-result { margin-top: 0.5rem; min-height: 60px; }
+.ai-result-item { padding: 0.7rem 0; border-bottom: 1px solid var(--border); }
+.ai-result-item:last-child { border-bottom: none; }
+.ai-result-title { font-family: var(--serif); font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.ai-result-reason { font-size: 0.72rem; color: var(--muted); line-height: 1.7; margin-top: 0.25rem; }
+
+.loading { display: flex; gap: 4px; justify-content: center; padding: 1rem 0; }
+.loading span { width: 5px; height: 5px; border-radius: 50%; background: var(--dim); animation: pulse 1.2s ease-in-out infinite; }
+.loading span:nth-child(2) { animation-delay: 0.2s; }
+.loading span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+/* 리뷰 최신 목록 */
+.review-item {
+  padding: 0.8rem 0; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: opacity 0.15s;
+}
+.review-item:last-child { border-bottom: none; }
+.review-item:hover { opacity: 0.65; }
+.review-item-title { font-family: var(--serif); font-size: 0.85rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+.review-item-meta { font-size: 0.65rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* ── MODAL ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(26,24,20,0.55); z-index: 100;
+  align-items: center; justify-content: center;
+  padding: 1.5rem; backdrop-filter: blur(4px);
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--card); border: 1px solid var(--border);
+  max-width: 580px; width: 100%; max-height: 85vh; overflow-y: auto;
+  padding: 2.5rem; position: relative;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.modal-close {
+  position: absolute; top: 1.2rem; right: 1.4rem;
+  background: none; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer;
+}
+.modal-platform { margin-bottom: 0.8rem; }
+.modal-title { font-family: var(--serif); font-size: 1.7rem; font-weight: 600; color: var(--text); line-height: 1.2; margin-bottom: 0.5rem; }
+.modal-meta { display: flex; gap: 1.2rem; font-size: 0.74rem; color: var(--muted); flex-wrap: wrap; margin-bottom: 1.4rem; }
+.modal-hr { height: 1px; background: var(--border); margin: 1.2rem 0; }
+.modal-body { font-family: var(--serif); font-size: 0.88rem; line-height: 2; color: var(--muted); white-space: pre-line; }
+.modal-link {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.72rem; letter-spacing: 0.08em; color: var(--text);
+  border: 1px solid var(--border); padding: 0.5rem 1rem;
+  text-decoration: none; margin-top: 1.2rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.modal-link:hover { border-color: var(--text); background: var(--surface); }
+
+/* ── REVIEW SECTION ── */
+#reviews-section {
+  max-width: 1160px; margin: 0 auto;
+  padding: 0 2.5rem 6rem;
+}
+
+.section-heading {
+  display: flex; align-items: baseline; gap: 1rem;
+  border-top: 2px solid var(--text);
+  padding-top: 1.2rem; margin-bottom: 2rem;
+}
+.section-heading h2 { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; }
+.section-count { font-size: 0.72rem; color: var(--muted); }
+
+.review-grid-full {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+}
+
+.review-card-full {
+  background: var(--card); padding: 1.8rem;
+  cursor: pointer; transition: background 0.12s;
+}
+.review-card-full:hover { background: var(--surface); }
+
+.rcf-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; }
+.rcf-genre { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.rcf-score { font-size: 0.75rem; color: var(--dim); }
+.rcf-title { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 0.25rem; }
+.rcf-author { font-size: 0.68rem; color: var(--muted); margin-bottom: 0.8rem; }
+.rcf-excerpt {
+  font-size: 0.8rem; line-height: 1.8; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rcf-platform { font-size: 0.6rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.8rem; }
+
+/* ── MOBILE ── */
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+
+@media (max-width: 640px) {
+  header { padding: 0 1.2rem; }
+  .header-nav { display: none; }
+  .tab-inner, .filter-bar, .main, #reviews-section { padding-left: 1.2rem; padding-right: 1.2rem; }
+  .modal { padding: 1.8rem 1.2rem; }
+  .review-grid-full { grid-template-columns: 1fr; }
+}
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.novel-card { animation: fadeIn 0.2s ease both; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">아카이빙</div>
+  <nav class="header-nav">
+    <a href="#top">추천</a>
+    <a href="#reviews-section">리뷰</a>
+  </nav>
+  <div class="search-box">
+    <span style="color:var(--dim);font-size:0.8rem">🔍</span>
+    <input type="text" id="searchInput" placeholder="작품명 검색..." oninput="render()">
+  </div>
+</header>
+
+<!-- PLATFORM TABS -->
+<div class="tab-section" id="top">
+  <div class="tab-inner">
+    <button class="tab active" data-p="전체" onclick="setP('전체',this)">전체</button>
+    <button class="tab" data-p="네이버시리즈" onclick="setP('네이버시리즈',this)"><span class="tab-dot"></span>네이버시리즈</button>
+    <button class="tab" data-p="카카오페이지" onclick="setP('카카오페이지',this)"><span class="tab-dot"></span>카카오페이지</button>
+    <button class="tab" data-p="조아라" onclick="setP('조아라',this)"><span class="tab-dot"></span>조아라</button>
+    <button class="tab" data-p="리디북스" onclick="setP('리디북스',this)"><span class="tab-dot"></span>리디북스</button>
+  </div>
+</div>
+
+<!-- FILTER -->
+<div class="filter-bar">
+  <button class="genre-btn active" onclick="setG('전체',this)">전체</button>
+  <button class="genre-btn" onclick="setG('로맨스판타지',this)">로맨스판타지</button>
+  <button class="genre-btn" onclick="setG('현대로맨스',this)">현대로맨스</button>
+  <button class="genre-btn" onclick="setG('판타지',this)">판타지</button>
+  <button class="genre-btn" onclick="setG('BL',this)">BL</button>
+  <button class="genre-btn" onclick="setG('패러디',this)">패러디</button>
+  <button class="genre-btn" onclick="setG('대체역사',this)">대체역사</button>
+  <select class="sort-select" id="sortSel" onchange="render()">
+    <option value="default">기본순</option>
+    <option value="score">평점순</option>
+    <option value="title">제목순</option>
+  </select>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div>
+    <div class="novel-grid" id="novelGrid"></div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <!-- AI 추천 -->
+    <div class="sidebar-block">
+      <div class="sidebar-title">취향으로 추천받기</div>
+      <div class="ai-form">
+        <div>
+          <label class="ai-label">선호 장르</label>
+          <select class="ai-select" id="aiGenre">
+            <option value="">선택</option>
+            <option>로맨스 판타지</option>
+            <option>현대 로맨스</option>
+            <option>판타지 (헌터물·회귀물)</option>
+            <option>BL</option>
+            <option>패러디</option>
+            <option>대체역사</option>
+            <option>무협</option>
+            <option>장르 불문</option>
+          </select>
+        </div>
+        <div>
+          <label class="ai-label">키워드 / 취향</label>
+          <textarea class="ai-textarea" id="aiKeyword" placeholder="예: 빙의물 좋아함, 착각계, 먼치킨 싫음, 달달한 거, BL 일공다수..."></textarea>
+        </div>
+        <button class="ai-btn" id="aiBtn" onclick="getAI()">추천받기</button>
+      </div>
+      <div class="ai-result" id="aiResult"></div>
+    </div>
+
+    <!-- 최신 리뷰 -->
+    <div class="sidebar-block">
+      <div class="sidebar-title">최신 리뷰</div>
+      <div id="latestReviews"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- 리뷰 섹션 -->
+<div id="reviews-section">
+  <div class="section-heading">
+    <h2>리뷰 아카이브</h2>
+    <span class="section-count" id="reviewCount"></span>
+  </div>
+  <div class="review-grid-full" id="reviewGrid"></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModalDirect()">×</button>
+    <div class="modal-platform" id="mPlat"></div>
+    <h2 class="modal-title" id="mTitle"></h2>
+    <div class="modal-meta" id="mMeta"></div>
+    <div class="modal-hr"></div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="card-tags" id="mTags" style="margin-top:1.2rem"></div>
+    <a class="modal-link" id="mLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  추천 작품 데이터
+// ════════════════════════════════════════════
+const novels = [
+  {
+    id:1, title:"황제의 외동딸", author:"황제의 외동딸 작가",
+    platform:"네이버시리즈", genre:"로맨스판타지", score:5,
+    tags:["이세계환생","황족","아버지","달달","입문추천"],
+    desc:`이세계 환생물 입문작으로 강력 추천. 아리아나 공주와 황제 아버지의 관계 묘사가 압도적으로 좋다.
+
+단순한 "예쁨 받는 공주" 서사에서 벗어나 인물 간의 감정 교류에 진심으로 공을 들인 작품.`,
+    link:"https://series.naver.com/novel/detail.series?productNo=2381651"
+  },
+  {
+    id:2, title:"나 혼자만 레벨업", author:"추공",
+    platform:"카카오페이지", genre:"판타지", score:5,
+    tags:["헌터물","먼치킨","성장","액션"],
+    desc:`헌터물 장르를 국내에서 가장 잘 구현한 작품. 성진우의 성장 서사는 독자를 계속 다음 화로 끌어당기는 힘이 있다.
+
+먼치킨 판타지의 쾌감을 서사적 긴장감 위에서 풀어낸다는 점에서 단순 무쌍물과 결이 다르다.`,
+    link:"https://page.kakao.com/content/53765838"
+  },
+  {
+    id:3, title:"전지적 독자 시점", author:"싱숑",
+    platform:"카카오페이지", genre:"판타지", score:5,
+    tags:["메타픽션","회귀","묵시록","명작"],
+    desc:`장르 소설의 문법을 메타적으로 해체하면서도 감정적으로 압도적인 작품. 독자가 소설 속 세계에 진입한다는 설정이 단순한 장치가 아니라 주제와 직결된다.
+
+완독 후 여운이 오래 간다.`,
+    link:"https://page.kakao.com/content/48813382"
+  },
+  {
+    id:4, title:"외과의사 엘리제", author:"한겨울눈꽃",
+    platform:"네이버시리즈", genre:"로맨스판타지", score:5,
+    tags:["빙의","의사","전문직","능동여주"],
+    desc:`의학 + 이세계 판타지의 조합이 기가 막히게 잘 맞아떨어진다. 주인공의 전문성이 설정 장치가 아니라 서사의 핵심 동력이다.
+
+로판 장르에서 흔히 보이는 수동적 여주 서사와 완전히 다른 노선을 탄다.`,
+    link:"https://series.naver.com/novel/detail.series?productNo=4587571"
+  },
+  {
+    id:5, title:"재벌집 막내아들", author:"산경",
+    platform:"카카오페이지", genre:"현대로맨스", score:4,
+    tags:["회귀","재벌","복수","전략"],
+    desc:`회귀물에 재벌가 권력 다툼을 결합한 구성. 경제·법률 요소를 비교적 사실적으로 활용했다.
+
+로맨스보다 서사와 전략의 쾌감에 집중된 작품이라 달달함을 기대하면 다를 수 있다.`,
+    link:"https://page.kakao.com/content/53058898"
+  },
+  {
+    id:6, title:"이혼당하려고 황자를 노예로 사버렸다", author:"글뽑는자판기",
+    platform:"조아라", genre:"로맨스판타지", score:5,
+    tags:["걸크러쉬여주","사이다","막장","대형견남주"],
+    desc:`막장드라마를 좋아하는 이유를 다시 알게 해준 작품. 뒷목 잡으면서 계속 보게 된다.
+
+당당하고 강한 여주 이리나가 이 작품의 전부다. 무개념 시월드를 박살내는 서사가 시원시원하다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1314813"
+  },
+  {
+    id:7, title:"사이코 여왕의 대영제국", author:"스플렌더",
+    platform:"조아라", genre:"대체역사", score:4,
+    tags:["대체역사","메리여왕","걸크러쉬","영국"],
+    desc:`대체역사물이지만 가볍고 시원시원하게 읽힌다. 블러디 메리가 된 주인공의 막 나가는 행동들이 신선하고 통쾌하다.
+
+대체역사 장르 입문으로 추천.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1415752"
+  },
+  {
+    id:8, title:"블랙기업 조선", author:"국뽕",
+    platform:"조아라", genre:"대체역사", score:4,
+    tags:["대체역사","세종대왕","덕질","발명"],
+    desc:`잡덕 주인공이 세종의 아들로 환생해 덕질로 조선을 바꿔버리는 이야기. 재벌물 + 대체역사의 조합.
+
+중간중간 터지는 개그가 압권이고, 무겁지 않게 가볍게 읽을 수 있다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1500680"
+  },
+  {
+    id:9, title:"재력으로 후려치는 환생 경찰", author:"배뿌",
+    platform:"조아라", genre:"판타지", score:5,
+    tags:["회귀","재벌","경찰","사이다"],
+    desc:`재벌 아들이 경찰이 된다는 드라마 같은 설정. 그게 이렇게 재밌을 줄은 몰랐다.
+
+1화 본 날 완결까지 달렸다. 사이다와 고구마의 비율이 정말 완벽하다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1458286"
+  },
+  {
+    id:10, title:"폭군의 역하렘 게임", author:"여용",
+    platform:"조아라", genre:"로맨스판타지", score:4,
+    tags:["역하렘","게임빙의","반전","서사"],
+    desc:`표지 보고 홀려서 읽기 시작했다가 남주들과 서사에 빠져버린 작품. 반전이 생각보다 많고, 남주 각자의 서사가 탄탄하다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1524640"
+  },
+  {
+    id:11, title:"약먹는 천재마법사", author:"글근육",
+    platform:"조아라", genre:"판타지", score:5,
+    tags:["차원이동","사이버펑크","병약천재","다크판타지"],
+    desc:`게임 속 망캐 설정 그대로 현실이 된 마법사의 생존기. 사이버펑크 + 판타지 배경의 조합이 신선하고 눈이 즐겁다.
+
+비실비실하면서 마법은 천재인 주인공이 약 먹고 버티는 모습을 응원하게 된다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1473682"
+  },
+  {
+    id:12, title:"애니멀 엔터테이너", author:"달콤한Ice",
+    platform:"조아라", genre:"판타지", score:4,
+    tags:["회귀","동물","힐링","연예계"],
+    desc:`동물의 말을 알아듣는 능력을 가진 연예인의 회귀 이야기. 강아지 고양이뿐 아니라 다양한 동물이 나와 더 재밌다.
+
+어느 순간부터는 동물 커뮤니케이터 능력이 탐난다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1476982"
+  },
+  {
+    id:13, title:"던전 미식가", author:"대대원",
+    platform:"조아라", genre:"판타지", score:5,
+    tags:["요리","이세계","먹방","환생"],
+    desc:`마물 요리라는 설정이 신선하다. 요리 장면 볼 때마다 배고파지고 '나도 한입'이 절로 나온다.
+
+소제목이 요리 이름으로 되어 있어 읽는 재미가 배가 된다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1447521"
+  },
+  {
+    id:14, title:"퇴출1호 아이돌 연습생이 되었다", author:"흐린눈",
+    platform:"조아라", genre:"판타지", score:4,
+    tags:["빙의","아이돌","연예계","병맛"],
+    desc:`전직 용사님이 아이돌 연습생 몸에 빙의해 우당탕 생존하는 이야기. 살면서 본 아이돌물 중 가장 많이 웃은 작품.
+
+개연성? 현대판타지에서 그게 필요하냐며 넘어가게 된다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1489562"
+  },
+  {
+    id:15, title:"이런 희생이라면 환영입니다!", author:"엑스트라1",
+    platform:"조아라", genre:"BL", score:5,
+    tags:["착각계","일공다수","연기공","개그피폐"],
+    desc:`착각계 BL 중 손꼽히는 명작. 주인공 혼자 신나는 상황을 모두가 처절한 희생으로 오해하는 구도가 끝까지 웃기고 재밌다.
+
+킬링 타임 최고의 선택.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1425731"
+  },
+  {
+    id:16, title:"공작을 노예로 괴롭히는 악역이 나였습니다", author:"달파카",
+    platform:"조아라", genre:"BL", score:4,
+    tags:["여우공","얼빠수","착각계","달달"],
+    desc:`여우 공의 플러팅이 압도적이다. '반성문 쓰라니까 연애편지를 써왔어'가 이 작품 전부를 설명한다.
+
+피폐물 속 오아시스 같은 작품.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1527849"
+  },
+  {
+    id:17, title:"최애들을 위해 시한부가 되었다", author:"엑스트라1",
+    platform:"조아라", genre:"BL", score:5,
+    tags:["일공다수","시한부","후회수","스불재"],
+    desc:`스불재의 끝판왕. 주인공의 모든 행동이 재앙을 불러오지만 그 이유를 알게 되면 마음이 아파진다.
+
+씬 맛집이기도 하고 감정 맛집이기도 한 작품.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1542368"
+  },
+  {
+    id:18, title:"전마", author:"로이웬스",
+    platform:"조아라", genre:"BL", score:5,
+    tags:["일공다수","힐링","게임시스템","달달"],
+    desc:`일공다수 키워드에 입문하게 해준 바이블. 생각보다 훨씬 사랑이 넘치는 작품이다.
+
+공 치고는 순진한 연주인과 각양각색 수들의 힐링 연애기.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1393842"
+  },
+  {
+    id:19, title:"앰버그리스", author:"쑤비",
+    platform:"조아라", genre:"BL", score:4,
+    tags:["역키잡","인외공","드래곤","임신수"],
+    desc:`술김에 드래곤 알을 주운 디자이너와 봉인 당한 드래곤의 러브스토리. 역키잡 + 인외존재 조합이 신의 한 수.
+
+몸정 먼저인 전개가 역키잡 설정을 더 맛있게 만든다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1511643"
+  },
+  {
+    id:20, title:"즐기면서 레벨업!", author:"뭉망밍",
+    platform:"조아라", genre:"BL", score:4,
+    tags:["아카데미물","책빙의","다공일수","이능력"],
+    desc:`17회 77페스티벌 최우수상. 아카데미물 + 책빙의 + 다공일수의 조합.
+
+주인공 혼자 즐기는 상황의 세계관이 독특하고 공들의 개성이 하나하나 뚜렷하다.`,
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1516284"
+  },
+];
+
+// ════════════════════════════════════════════
+//  리뷰 데이터 (PDF에서)
+// ════════════════════════════════════════════
+const reviews = [
+  {
+    id:101, title:"역시 곤란한가요? 이런 제가 딸이라면!", author:"델이야끼",
+    platform:"조아라", genre:"패러디",
+    excerpt:`주술회전 x 헌터 크로스오버. 토우지 최애인 사람이 보증하는 주술회전 패러디 TOP5 작품. '가족'이 무엇인가를 다시 생각하게 만든다. 비극인 듯 해피엔딩. 완결 후 '아버지와 딸'이라는 존재에 대해 한참 멍하니 있었다.`,
+    fullReview:`주술회전 x 헌터 패러디 중 단연 최애 작품. 젠인 토우지가 어느 날 자신의 딸이 생기면서 시작되는 가족물이다.
+
+처음 제목 보고 괴리감이 컸다. 주인공 표정은 밝은데 "역시 곤란한가요? 이런 제가 딸이라면!"이라는 대사가 너무 무거워 보여서. 근데 완결까지 읽고 나서야 이 문장이 작품 전체를 관통하고 있다는 걸 알게 됐다.
+
+'딸'이라는 역할과 '아버지'라는 역할은 모두가 처음 해보는 경험이다. 누가 가르쳐주지도 않고, 그래서 옆을 보고 배울 수밖에 없다. 하지만 그마저도 배울 수 없다면?
+
+아버지와 딸이라기보다 동료에 가까웠던 둘의 관계가 어떻게 비극을 만들고, 또 어떻게 해피엔딩을 만드는지 — 직접 읽어봐야 한다.
+
+토우지가 딸을 키우는 게 맞는지 틀린지 모르겠는데, 읽다 보면 이상하게 '어울리네'라고 생각하게 된다. 한달에 한 번은 정주행하는 작품.`,
+    tags:["주술회전","헌터","토우지","가족물","해피엔딩"],
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1487365"
+  },
+  {
+    id:102, title:"겹쳐지는 천 개의 수평선", author:"놉챠라떼",
+    platform:"조아라", genre:"패러디",
+    excerpt:`원피스 패러디 중 손꼽히는 명작. 루피만 살아남은 세계와 루피만 죽은 세계가 만났을 때의 이야기. 사흘에 한 번은 정주행한다. 읽는 내내 '애들아 행복해라'만 외쳤다.`,
+    fullReview:`원피스 패러디의 정점이라 생각하는 작품. 루피만 살아남은 세계와 루피만 죽은 세계가 드레스로자에서 만나는 이야기.
+
+표지를 보고 '세계 넘어가는 거 맞지?'라고 했을 때부터 시작이었다.
+
+루피가 생각을 한다. 막무가내가 아니다. 상황을 냉철하게 본다. 이게 왜 그렇게 됐는지 알게 되는 순간 눈물이 났다. 동료들 없는 루피가 혼자 살아남기 위해 익혔을 것들이 그냥 느껴졌다.
+
+모두 없어져버린 루피를 본 동료들이 어떤 생각이 들었을지, 그리고 살아있는 동료들을 본 루피가 어떤 생각이 들었을지. 서로의 죽음이 트라우마가 된 상황에서 이걸 어떻게 풀어가는지가 이 작품의 전부다.
+
+작가님 표현력이 진짜 입을 틀어막고 봐야 할 수준.`,
+    tags:["원피스","루피","루피사망","세계이동","명작"],
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1501872"
+  },
+  {
+    id:103, title:"미아 찾기", author:"o하얀키위새",
+    platform:"조아라", genre:"패러디",
+    excerpt:`센과 치히로의 행방불명 x 주술회전 크로스오버. 물과 기름 같은 두 장르가 이렇게 잘 섞일 줄 몰랐다. 치히로가 해주사가 된다는 설정이 신의 한 수.`,
+    fullReview:`지브리와 주술회전이 크로스오버 된다면? 그냥 캐릭터만 가져다 놓는 줄 알았다.
+
+전혀 아니었다.
+
+센과 치히로에서 신령계에 있었던 기억을 가진 치히로가 주술계에서 주령을 '퇴치'하는 게 아니라 '해주'하는 해주사가 된다는 설정 자체가 이미 창작이다. 두 작품의 분위기와 설정을 각각 뽑아서 새롭게 만들어낸 느낌.
+
+주술회전 특유의 꿈도 희망도 없는 세계관에 지브리의 따뜻함이 들어오면 어떻게 될까? 그 답이 이 작품이다.
+
+고죠 사토루가 치히로 덕질하면서 교복 커스텀해주는 장면은 진짜 소리 질렀다. 세같살 엔딩 부탁드립니다 작가님...`,
+    tags:["주술회전","센과치히로","지브리","크로스오버","해주사"],
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1487562"
+  },
+  {
+    id:104, title:"응애, 나 애기헌터. 키워줘!", author:"그리좋더라",
+    platform:"조아라", genre:"판타지",
+    excerpt:`헌터물 + 성좌물 + 육아물의 조합. 성좌들이 착하고 멍충미가 있어서 신선하다. 치킨 먹고 좋아하는 성좌가 귀여워서 보게 됨. 가볍게 읽기 좋은 작품.`,
+    fullReview:`전독시로 성좌물을 처음 배운 사람으로서 다른 성좌물들을 꽤 봤는데 이 작품은 좀 다르다.
+
+여기 나오는 성좌들이 착하다. 다른 성좌물에서는 인간을 유희거리로 보는 반면 여기는 나름 인간을 도와주고 있다. 그것도 이것저것 물어보고 치킨 먹고 좋아하는 수준으로.
+
+'태초의 어머니'라는 성좌가 주인공을 추종자가 아니라 진짜 아기처럼 대하는 게 이 작품의 메인 설정인데, 영약이랑 공갈 젖꼭지 내려주는 성좌라니. 예상을 완전히 벗어났다.
+
+가볍게 읽고 싶거나 색다른 성좌물 원하는 사람에게 추천.`,
+    tags:["헌터물","성좌물","육아물","병맛","힐링"],
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1529476"
+  },
+  {
+    id:105, title:"킬러 비트", author:"티디",
+    platform:"조아라", genre:"현대로맨스",
+    excerpt:`여공남수의 입문서. 여주가 천 살 넘은 식인 괴물이고 남주는 잡으러 왔다가 먹힐 뻔 한 킬러. 어두운 설정인데 분위기가 코믹하다. 광대가 내려오지 않는 작품.`,
+    fullReview:`여공남수 키워드를 알게 해준 작품. 살인 청부업자 남주가 식인 괴물 여주를 죽이러 갔다가 역으로 감금당하는 이야기.
+
+처음에 내용 보고 무거운 분위기일 줄 알았는데 전혀. 어둡긴 한데 코믹하다. 어떻게 이게 가능한지 모르겠지만 그냥 된다.
+
+남주가 킬러인데 어두운 거 무서워하고 여주한테 누나라고 매달린다. 생긴 건 멀쩡히 잘생기고 직업은 킬러인데 이게 너무 귀엽다.
+
+여주와 남주의 티키타카가 장난 아니고, 그 사이 스릴러 요소도 나름 갖추고 있다. 19금이지만 생각보다 쎄지는 않다는 것도 참고.`,
+    tags:["여공남수","인외여주","킬러남주","코믹","소프트sm"],
+    link:"https://www.joara.com/literature/view/book_intro.html?book_code=1497384"
+  },
+  {
+    id:106, title:"찐친무해", author:"발리움",
+    platform:"조아라", genre:"패러디",
+    excerpt:`도플라밍고, 크로커다일, 미호크가 전생부터 찐친이라는 설정. 보자마자 알림 설정한 작품. 지들끼리만 즐거운 쓰레기지만 진짜 재밌다. 원작이 바뀌어도 이상하지 않다.`,
+    fullReview:`제목부터 이해를 못했다. 찐친무해? 칠무해? 알고 보니 도플라밍고, 크로커다일, 미호크가 전생에서부터 친구인 이야기였다.
+
+셋이 처음 칠무해 회의에서 삼자대면을 하는데 서로 알아보고 디스를 날리는 장면이 진짜 웃겼다. 옷이 왜 그러냐, 패션 센스 죽은 거 여전하네 — 이거 보고 알림 설정했다.
+
+전생에서 죽고 각자 다른 몸으로 환생해서 몇십 년 만에 만났는데도 전혀 어색함이 없는 찐친 바이브. 그들이 모이면 무엇을 먹을까, 어디 갈까만 생각한다. 그 과정에서 원작이 의도치 않게 바뀌어버리고 센고쿠의 위장이 나락으로 가는 것도 부가 포인트.
+
+읽다 보면 서로가 서로에게 낙원이라는 게 느껴진다. 그 깊은 감정이 이 작품을 개그물 이상으로 만든다.`,
+    tags:["원피스","찐친","도플라밍고","크로커다일","미호크","전생"],
+    link:"http://www.joara.com/literature/view/book_intro.html?book_code=1508830"
+  },
+];
+
+// ════════════════════════════════════════════
+
+const pBadge = {
+  '네이버시리즈': '<span class="card-platform p-naver">네이버시리즈</span>',
+  '카카오페이지': '<span class="card-platform p-kakao">카카오페이지</span>',
+  '조아라':       '<span class="card-platform p-joara">조아라</span>',
+  '리디북스':     '<span class="card-platform p-ridi">리디북스</span>',
+};
+
+const stars = n => '★'.repeat(n) + '☆'.repeat(5-n);
+
+let curP = '전체', curG = '전체';
+
+function setP(p, btn) {
+  curP = p;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function setG(g, btn) {
+  curG = g;
+  document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const sort = document.getElementById('sortSel').value;
+
+  let list = novels.filter(n => {
+    return (curP === '전체' || n.platform === curP)
+      && (curG === '전체' || n.genre === curG)
+      && (!q || n.title.includes(q) || n.author.includes(q) || n.tags.some(t => t.includes(q)));
+  });
+
+  if (sort === 'score') list = [...list].sort((a,b) => b.score - a.score);
+  if (sort === 'title') list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ko'));
+
+  const grid = document.getElementById('novelGrid');
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty-state">해당하는 작품이 없습니다</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map((n,i) => `
+    <div class="novel-card" style="animation-delay:${i*0.03}s" onclick="openNovelModal(${n.id})">
+      <div class="card-header">
+        ${pBadge[n.platform]||''}
+        <span class="card-score">${stars(n.score)}</span>
+      </div>
+      <div class="card-title">${n.title}</div>
+      <div class="card-author">${n.author}</div>
+      <div class="card-desc">${n.desc.split('\n')[0]}</div>
+      <div class="card-tags">${n.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function renderReviews() {
+  const grid = document.getElementById('reviewGrid');
+  document.getElementById('reviewCount').textContent = `${reviews.length}편`;
+  grid.innerHTML = reviews.map(r => `
+    <div class="review-card-full" onclick="openReviewModal(${r.id})">
+      <div class="rcf-head">
+        <span class="rcf-genre">${r.genre} · ${r.platform}</span>
+      </div>
+      <div class="rcf-title">${r.title}</div>
+      <div class="rcf-author">${r.author}</div>
+      <div class="rcf-excerpt">${r.excerpt}</div>
+      <div class="rcf-platform">${r.tags.map(t=>`#${t}`).join(' ')}</div>
+    </div>
+  `).join('');
+
+  // sidebar latest
+  const latest = document.getElementById('latestReviews');
+  latest.innerHTML = reviews.slice(0,4).map(r => `
+    <div class="review-item" onclick="openReviewModal(${r.id})">
+      <div class="review-item-title">${r.title}</div>
+      <div class="review-item-meta">${r.genre} · ${r.platform}</div>
+    </div>
+  `).join('');
+}
+
+function openNovelModal(id) {
+  const n = novels.find(x => x.id === id);
+  if (!n) return;
+  document.getElementById('mPlat').innerHTML = pBadge[n.platform]||'';
+  document.getElementById('mTitle').textContent = n.title;
+  document.getElementById('mMeta').innerHTML = `<span>${n.author}</span><span>${stars(n.score)}</span><span style="color:var(--dim)">${n.genre}</span>`;
+  document.getElementById('mBody').textContent = n.desc;
+  document.getElementById('mTags').innerHTML = n.tags.map(t=>`<span class="card-tag">${t}</span>`).join('');
+  const lnk = document.getElementById('mLink');
+  lnk.href = n.link; lnk.textContent = `${n.platform}에서 보기 →`;
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function openReviewModal(id) {
+  const r = reviews.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('mPlat').innerHTML = pBadge[r.platform]||`<span style="font-size:0.65rem;color:var(--muted)">${r.platform}</span>`;
+  document.getElementById('mTitle').textContent = r.title;
+  document.getElementById('mMeta').innerHTML = `<span>${r.author}</span><span style="color:var(--dim)">${r.genre}</span>`;
+  document.getElementById('mBody').textContent = r.fullReview;
+  document.getElementById('mTags').innerHTML = r.tags.map(t=>`<span class="card-tag">#${t}</span>`).join('');
+  const lnk = document.getElementById('mLink');
+  lnk.href = r.link; lnk.textContent = `${r.platform}에서 보기 →`;
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) { if (e.target === document.getElementById('overlay')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('overlay').classList.remove('open'); document.body.style.overflow=''; }
+
+// AI 추천
+async function getAI() {
+  const genre = document.getElementById('aiGenre').value;
+  const keyword = document.getElementById('aiKeyword').value;
+  if (!genre && !keyword) { alert('장르나 키워드를 입력해주세요!'); return; }
+
+  const btn = document.getElementById('aiBtn');
+  const result = document.getElementById('aiResult');
+  btn.disabled = true;
+  result.innerHTML = '<div class="loading"><span></span><span></span><span></span></div>';
+
+  const prompt = `당신은 한국 웹소설 전문 큐레이터입니다.
+독자 취향: 선호 장르 = ${genre||'무관'}, 키워드/취향 = ${keyword||'없음'}
+이 취향에 맞는 웹소설 3편을 추천해주세요.
+마크다운 없이 순수 JSON만 반환:
+{"list":[{"title":"작품명","author":"작가명","platform":"플랫폼명","reason":"추천 이유 1-2문장"},{"title":"","author":"","platform":"","reason":""},{"title":"","author":"","platform":"","reason":""}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:800,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.map(i=>i.text||'').join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    result.innerHTML = parsed.list.map(r=>`
+      <div class="ai-result-item">
+        <div class="ai-result-title">${r.title} <span style="font-weight:300;font-size:0.72rem;color:var(--dim)">— ${r.author} · ${r.platform}</span></div>
+        <div class="ai-result-reason">${r.reason}</div>
+      </div>
+    `).join('');
+  } catch {
+    result.innerHTML = '<div style="font-size:0.75rem;color:var(--dim);padding:0.5rem 0">잠시 후 다시 시도해주세요.</div>';
+  }
+  btn.disabled = false;
+}
+
+render();
+renderReviews();
+</script>
+</body>
+</html>
