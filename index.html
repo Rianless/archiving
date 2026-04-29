@@ -229,6 +229,14 @@ header {
   font-weight: 600;
   margin-top: 0.4rem;
 }
+.work-type-badge {
+  font-size: 10px;
+  background: var(--tag-bg);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-weight: 500;
+}
 
 /* 검색결과 작품 팝업 모달 */
 .work-modal {
@@ -1671,7 +1679,6 @@ async function doSearch() {
     };
 
     count.textContent = `${results.length}개`;
-    // 검색 결과를 전역에 저장해두고 팝업에서 참조
     window._searchResults = results;
 
     grid.innerHTML = results.map((item, idx) => {
@@ -1679,19 +1686,29 @@ async function doSearch() {
       const coverHtml = item.cover
         ? `<img class="work-cover" src="${item.cover}" alt="${item.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         : '';
-      const fallbackHtml = `<div class="work-cover-fallback" style="${item.cover ? 'display:none' : ''}">${item.title.slice(0,4)}</div>`;
+      const fallbackHtml = `<div class="work-cover-fallback" style="${item.cover ? 'display:none' : ''}">
+        ${item.type === 'blog' ? '📝' : item.title.slice(0,4)}</div>`;
+      const cardAttr = item.type === 'blog'
+        ? `onclick="window.open('${item.link}','_blank')" style="cursor:pointer"`
+        : `onclick="openWorkModal(${idx})" style="cursor:pointer"`;
+      const badge = item.type === 'blog'
+        ? `<span class="work-type-badge">블로그 추천글</span>` : '';
 
       return `
-        <div class="work-card" onclick="openWorkModal(${idx})" style="cursor:pointer">
+        <div class="work-card" ${cardAttr}>
           <div class="work-cover-wrap">
             ${coverHtml}
             ${fallbackHtml}
           </div>
           <div class="work-info">
-            <span class="work-platform" style="color:${color}">${item.platform}</span>
+            <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">
+              <span class="work-platform" style="color:${color}">${item.platform}</span>
+              ${badge}
+            </div>
             <div class="work-title">${item.title}</div>
             ${item.author ? `<div class="work-author">${item.author}</div>` : ''}
             <div class="work-desc">${item.description}</div>
+            ${item.type === 'blog' ? `<span class="work-link">블로그 원문 보기 →</span>` : ''}
           </div>
         </div>
       `;
