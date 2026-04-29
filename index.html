@@ -1729,6 +1729,7 @@ function openWorkModal(idx) {
     '카카오페이지': '#d4a800',
     '네이버시리즈': '#03c75a',
     '리디북스': '#1f8ce6',
+    '웹소설': '#888',
   };
 
   const color = platformColors[item.platform] || '#888';
@@ -1736,7 +1737,16 @@ function openWorkModal(idx) {
   document.getElementById('wmPlatform').textContent = item.platform;
   document.getElementById('wmPlatform').style.color = color;
   document.getElementById('wmTitle').textContent = item.title;
-  document.getElementById('wmAuthor').textContent = item.author || '';
+
+  // 작가 + 출판사 + 출판일
+  let meta = '';
+  if (item.author) meta += item.author;
+  if (item.publisher) meta += (meta ? ' · ' : '') + item.publisher;
+  if (item.pubdate && item.pubdate.length === 8) {
+    const d = item.pubdate;
+    meta += (meta ? ' · ' : '') + `${d.slice(0,4)}.${d.slice(4,6)}.${d.slice(6,8)}`;
+  }
+  document.getElementById('wmAuthor').textContent = meta;
   document.getElementById('wmDesc').textContent = item.description || '작품 소개가 없습니다.';
 
   const img = document.getElementById('wmCover');
