@@ -230,6 +230,75 @@ header {
   margin-top: 0.4rem;
 }
 
+/* 검색결과 작품 팝업 모달 */
+.work-modal {
+  max-width: 560px;
+  width: 92%;
+}
+.work-modal-inner {
+  display: flex;
+  gap: 1.4rem;
+  align-items: flex-start;
+}
+.work-modal-cover-wrap {
+  flex-shrink: 0;
+  width: 110px;
+  height: 155px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--tag-bg);
+}
+.work-modal-cover-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.work-modal-cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px;
+  word-break: keep-all;
+  line-height: 1.4;
+}
+.work-modal-info {
+  flex: 1;
+  min-width: 0;
+}
+.work-modal-platform {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.work-modal-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0.3rem 0 0.2rem;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.work-modal-author {
+  font-size: 0.82rem;
+  color: var(--text-sub);
+  margin-bottom: 0.2rem;
+}
+.work-modal-desc {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text-sub);
+  white-space: pre-wrap;
+}
+@media (max-width: 480px) {
+  .work-modal-inner { flex-direction: column; }
+  .work-modal-cover-wrap { width: 100%; height: 180px; }
+}
+
 .search-tags {
   display: flex;
   gap: 0.5rem;
@@ -616,6 +685,26 @@ header {
     <div class="modal-hr"></div>
     <div class="modal-body" id="mBody"></div>
     <div class="rc-tags" id="mTags" style="margin-top:1.2rem"></div>
+  </div>
+</div>
+
+<!-- 검색 결과 작품 팝업 -->
+<div class="overlay" id="workOverlay" onclick="closeWorkModal(event)">
+  <div class="modal work-modal">
+    <button class="modal-close" onclick="closeWorkModalDirect()">×</button>
+    <div class="work-modal-inner">
+      <div class="work-modal-cover-wrap">
+        <img id="wmCover" src="" alt="" onerror="this.style.display='none'">
+        <div id="wmCoverFallback" class="work-modal-cover-fallback"></div>
+      </div>
+      <div class="work-modal-info">
+        <span class="work-modal-platform" id="wmPlatform"></span>
+        <h2 class="work-modal-title" id="wmTitle"></h2>
+        <div class="work-modal-author" id="wmAuthor"></div>
+        <div class="modal-hr" style="margin:1rem 0"></div>
+        <div class="work-modal-desc" id="wmDesc"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1582,7 +1671,10 @@ async function doSearch() {
     };
 
     count.textContent = `${results.length}개`;
-    grid.innerHTML = results.map(item => {
+    // 검색 결과를 전역에 저장해두고 팝업에서 참조
+    window._searchResults = results;
+
+    grid.innerHTML = results.map((item, idx) => {
       const color = platformColors[item.platform] || '#888';
       const coverHtml = item.cover
         ? `<img class="work-cover" src="${item.cover}" alt="${item.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -1590,7 +1682,7 @@ async function doSearch() {
       const fallbackHtml = `<div class="work-cover-fallback" style="${item.cover ? 'display:none' : ''}">${item.title.slice(0,4)}</div>`;
 
       return `
-        <a class="work-card" href="${item.platformLink}" target="_blank" rel="noopener noreferrer">
+        <div class="work-card" onclick="openWorkModal(${idx})" style="cursor:pointer">
           <div class="work-cover-wrap">
             ${coverHtml}
             ${fallbackHtml}
@@ -1600,9 +1692,8 @@ async function doSearch() {
             <div class="work-title">${item.title}</div>
             ${item.author ? `<div class="work-author">${item.author}</div>` : ''}
             <div class="work-desc">${item.description}</div>
-            <span class="work-link">플랫폼에서 보기 →</span>
           </div>
-        </a>
+        </div>
       `;
     }).join('');
   } catch (e) {
@@ -1628,6 +1719,45 @@ function openReviewModal(id) {
 
 function closeModal(e) { if (e.target === document.getElementById('overlay')) closeModalDirect(); }
 function closeModalDirect() { document.getElementById('overlay').classList.remove('open'); document.body.style.overflow = ''; }
+
+function openWorkModal(idx) {
+  const item = (window._searchResults || [])[idx];
+  if (!item) return;
+
+  const platformColors = {
+    '조아라': '#7c4dff',
+    '카카오페이지': '#d4a800',
+    '네이버시리즈': '#03c75a',
+    '리디북스': '#1f8ce6',
+  };
+
+  const color = platformColors[item.platform] || '#888';
+
+  document.getElementById('wmPlatform').textContent = item.platform;
+  document.getElementById('wmPlatform').style.color = color;
+  document.getElementById('wmTitle').textContent = item.title;
+  document.getElementById('wmAuthor').textContent = item.author || '';
+  document.getElementById('wmDesc').textContent = item.description || '작품 소개가 없습니다.';
+
+  const img = document.getElementById('wmCover');
+  const fallback = document.getElementById('wmCoverFallback');
+  if (item.cover) {
+    img.src = item.cover;
+    img.style.display = 'block';
+    fallback.style.display = 'none';
+    fallback.textContent = '';
+  } else {
+    img.style.display = 'none';
+    fallback.style.display = 'flex';
+    fallback.textContent = item.title.slice(0, 6);
+  }
+
+  document.getElementById('workOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeWorkModal(e) { if (e.target === document.getElementById('workOverlay')) closeWorkModalDirect(); }
+function closeWorkModalDirect() { document.getElementById('workOverlay').classList.remove('open'); document.body.style.overflow = ''; }
 </script>
 </body>
 </html>
