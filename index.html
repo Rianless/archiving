@@ -711,6 +711,7 @@ header {
         <div class="work-modal-author" id="wmAuthor"></div>
         <div class="modal-hr" style="margin:1rem 0"></div>
         <div class="work-modal-desc" id="wmDesc"></div>
+        <a id="wmLinkBtn" href="" target="_blank" rel="noopener noreferrer" style="display:none;margin-top:1rem;font-size:12px;color:var(--accent);font-weight:600;text-decoration:none"></a>
       </div>
     </div>
   </div>
@@ -1686,16 +1687,11 @@ async function doSearch() {
       const coverHtml = item.cover
         ? `<img class="work-cover" src="${item.cover}" alt="${item.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         : '';
-      const fallbackHtml = `<div class="work-cover-fallback" style="${item.cover ? 'display:none' : ''}">
-        ${item.type === 'blog' ? '📝' : item.title.slice(0,4)}</div>`;
-      const cardAttr = item.type === 'blog'
-        ? `onclick="window.open('${item.link}','_blank')" style="cursor:pointer"`
-        : `onclick="openWorkModal(${idx})" style="cursor:pointer"`;
-      const badge = item.type === 'blog'
-        ? `<span class="work-type-badge">블로그 추천글</span>` : '';
+      const fallbackHtml = `<div class="work-cover-fallback" style="${item.cover ? 'display:none' : ''}">${item.title.slice(0,4)}</div>`;
+      const badge = item.type === 'blog' ? `<span class="work-type-badge">추천글</span>` : '';
 
       return `
-        <div class="work-card" ${cardAttr}>
+        <div class="work-card" onclick="openWorkModal(${idx})" style="cursor:pointer">
           <div class="work-cover-wrap">
             ${coverHtml}
             ${fallbackHtml}
@@ -1708,7 +1704,6 @@ async function doSearch() {
             <div class="work-title">${item.title}</div>
             ${item.author ? `<div class="work-author">${item.author}</div>` : ''}
             <div class="work-desc">${item.description}</div>
-            ${item.type === 'blog' ? `<span class="work-link">블로그 원문 보기 →</span>` : ''}
           </div>
         </div>
       `;
@@ -1777,6 +1772,16 @@ function openWorkModal(idx) {
     img.style.display = 'none';
     fallback.style.display = 'flex';
     fallback.textContent = item.title.slice(0, 6);
+  }
+
+  // 블로그 타입이면 원문 보기 버튼 표시
+  const linkBtn = document.getElementById('wmLinkBtn');
+  if (item.link) {
+    linkBtn.href = item.link;
+    linkBtn.style.display = 'inline-block';
+    linkBtn.textContent = item.type === 'blog' ? '블로그 원문 보기 →' : '작품 페이지 보기 →';
+  } else {
+    linkBtn.style.display = 'none';
   }
 
   document.getElementById('workOverlay').classList.add('open');
