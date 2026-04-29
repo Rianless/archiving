@@ -13,39 +13,52 @@ export default async function handler(req, res) {
   const clean = (str) =>
     (str || '').replace(/<[^>]*>/g, '').replace(/&[a-z#0-9]+;/g, ' ').trim();
 
+  const getImage = async (title) => {
+    try {
+      const r = await fetch(
+        `https://openapi.naver.com/v1/search/image?query=${encodeURIComponent(title + ' 웹소설')}&display=1&sort=sim`,
+        { headers: naverHeaders }
+      );
+      const d = await r.json();
+      return d.items?.[0]?.thumbnail || '';
+    } catch { return ''; }
+  };
+
   try {
-    // 1. 네이버 책 검색 먼저 시도
+    // 1. 네이버 책 검색
     const bookRes = await fetch(
       `https://openapi.naver.com/v1/search/book.json?query=${encodeURIComponent(query)}&display=10&sort=sim`,
       { headers: naverHeaders }
     );
     const bookData = await bookRes.json();
     const bookItems = (bookData.items || []).filter(item => {
-      // 웹소설 관련 출판사만 (너무 엉뚱한 책 필터링)
       const pub = clean(item.publisher).toLowerCase();
       const desc = clean(item.description).toLowerCase();
       const title = clean(item.title).toLowerCase();
-      // 웹소설 관련 키워드가 하나라도 있으면 포함
-      const webnovelKeywords = ['카카오', '네이버', '리디', '조아라', '로맨스', '판타지', '웹소설', '웹툰', '문피아', '시리즈'];
+      const webnovelKeywords = ['카카오', '네이버', '리디', '조아라', '로맨스', '판타지', '웹소설', '문피아', '시리즈'];
       return webnovelKeywords.some(k => pub.includes(k) || desc.includes(k) || title.includes(k));
     });
 
     if (bookItems.length >= 3) {
-      // 책 결과 충분하면 책 결과 반환
-      const results = bookItems.slice(0, 6).map(item => ({
-        type: 'book',
-        title: clean(item.title),
-        author: clean(item.author).replace(/\^/g, ', '),
-        platform: guessPlatform(clean(item.publisher), platform),
-        description: clean(item.description).slice(0, 200),
-        cover: item.image || '',
-        publisher: clean(item.publisher),
-        pubdate: item.pubdate || '',
+      const results = await Promise.all(bookItems.slice(0, 6).map(async item => {
+        const title = clean(item.title);
+        const cover = item.image || await getImage(title);
+        return {
+          type: 'book',
+          title,
+          author: clean(item.author).replace(/\^/g, ', '),
+          platform: guessPlatform(clean(item.publisher), platform),
+          description: clean(item.description).slice(0, 200),
+          cover,
+          publisher: clean(item.publisher),
+          pubdate: item.pubdate || '',
+          link: item.link || '',
+        };
       }));
       return res.status(200).json({ results });
     }
 
-    // 2. 책 결과 부족하면 블로그 검색으로 fallback
+    // 2. 블로그 fallback
     const platformQuery = platform && platform !== '전체' ? platform : '웹소설';
     const blogRes = await fetch(
       `https://openapi.naver.com/v1/search/blog.json?query=${encodeURIComponent(query + ' ' + platformQuery + ' 추천')}&display=10&sort=sim`,
@@ -58,16 +71,25 @@ export default async function handler(req, res) {
       return res.status(200).json({ results: [] });
     }
 
-    // 블로그 글 자체를 카드로 보여줌 (작품명 추출 없이)
-    const results = blogItems.slice(0, 6).map(item => ({
-      type: 'blog',
-      title: clean(item.title),
-      author: item.bloggername || '',
-      platform: guessPlatformFromText(clean(item.title) + ' ' + clean(item.description), platform),
-      description: clean(item.description).slice(0, 200),
-      cover: '',
-      link: item.link || '',
-      bloggerlink: item.bloggerlink || '',
+    // 블로그 타입도 이미지 검색 + 팝업으로 보여줌
+    const results = await Promise.all(blogItems.slice(0, 6).map(async item => {
+      const title = clean(item.title);
+      // 블로그 제목에서 [] 안 텍스트 추출 시도 (작품명일 가능성 높음)
+      const bracketMatch = title.match(/[\[「『]([^\]」』]{2,20})[\]」』]/);
+      const displayTitle = bracketMatch ? bracketMatch[1] : title;
+      const cover = await getImage(displayTitle);
+
+      return {
+        type: 'blog',
+        title: displayTitle,
+        originalTitle: title,
+        author: item.bloggername || '',
+        platform: guessPlatformFromText(title + ' ' + clean(item.description), platform),
+        description: clean(item.description).slice(0, 200),
+        cover,
+        link: item.link || '',
+        pubdate: (item.postdate || '').replace(/(\d{4})(\d{2})(\d{2})/, '$1.$2.$3'),
+      };
     }));
 
     res.status(200).json({ results });
@@ -84,7 +106,6 @@ function guessPlatform(publisher, preferPlatform) {
   if (/네이버|naver|시리즈/.test(p)) return '네이버시리즈';
   if (/리디|ridi/.test(p)) return '리디북스';
   if (/조아라/.test(p)) return '조아라';
-  if (/문피아/.test(p)) return '문피아';
   return '웹소설';
 }
 
